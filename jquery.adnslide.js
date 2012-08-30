@@ -39,9 +39,38 @@
 
         base.handler = function(){
             // Add click to next and previous button (most likely arrow)
-             
+            if(base.options.handlerNext != null){
+                var nextElement = $(base.options.handlerNext);
+                if(nextElement.length >= 1){
+                    nextElement.click(function(){
+                        base.timeout(base.actualSlide+1,0);
+                        return false;
+                    });
+                }
+            }
+            if(base.options.handlerPrevious != null){
+                var previousElement = $(base.options.handlerPrevious);
+                if(previousElement.length >= 1){
+                    previousElement.click(function(){
+                        base.timeout(base.actualSlide-1,0);
+                        return false;
+                    });
+                }
+            }
             // Add click to the bullets for each slide 
-            
+            base.slides.each(function(k){
+                var slide = $(this);
+                var id = slide.attr('id');
+                if(id!=''){
+                    var bullets = $('a[href=#'+id+']');
+                    if(bullets.length>=1){
+                        bullets.click(function(){
+                            base.timeout(k,0);
+                            return false;
+                        });
+                    }
+                }
+            });
         };
 
         /**
@@ -65,7 +94,8 @@
          * @param  int slideNumber The slide you want to see 
          */
         base.slide = function(slideNumber){
-            if( (slideNumber > (base.slides.length-1)) || (slideNumber < 0) ) slideNumber = 0;
+            if( (slideNumber > (base.slides.length-1))) slideNumber = 0;
+            else if( slideNumber < 0 ) slideNumber = (base.slides.length-1);
             logging?log('going to slide '+slideNumber):null;            
 
             base.getSlide(slideNumber).find('.jsSlidesItem').css({visibility: 'hidden'});
@@ -124,6 +154,7 @@
         base.timeout = function(slideNumber, timing){
             if(timing==undefined) timing = base.options.slideTime;
             logging?log('activate timeout to show slide '+slideNumber+' in '+timing+' ms'):null;            
+            if(base.slideTimer) window.clearTimeout(base.slideTimer);
             base.slideTimer = window.setTimeout(function(){base.slide(slideNumber)},timing);    
         };
 
@@ -333,7 +364,7 @@
 
         // Misc 
         backgroundElement: null,
-        
+
         // 3D effect 
         thirdDLeaveDelay: 500, // fallback to no 3d when mouse is out will be in this delay
         thirdDXratio: 1, // ratio of X displacement 

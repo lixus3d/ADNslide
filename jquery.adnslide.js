@@ -3,10 +3,38 @@
     pluginName = 'ADNslide';
 
     $.ADNslide = function(el, options){
+
         // To avoid scope issues, use 'base' instead of 'this'
         // to reference this class from internal events and functions.
         var base = this;
         
+        base.defaultOptions = {
+            // hum ... what the hell with this option ? 
+            debug: false,
+            // DefaultTimes 
+            initTime: 300, // time before the ADNslide launch, if it's too short the first animation might be lost in the loading time of the page 
+            slideTime: 5000, // duration of each slide 
+            slideAnimationTime: 400, // duration of the transition of each slide (x2 because of hiding then showing)
+            animationTime: 650, // default animation duration of sub element 
+
+            // DefaultDistances
+            animationDistanceX: 200, // X Distance the sub element will travel during is animation 
+            animationDistanceY: 100, // Y Distance the sub element will travel during is animation 
+
+            // Behaviors
+            type: 'fade', // fade, vertical, horizontal
+            stopOnHover: true, // Does we stop the slide transition if the mouse is hover the slide 
+
+            // Misc 
+            backgroundElement: null,
+
+            // 3D effect 
+            thirdDLeaveDelay: 500, // fallback to no 3d when mouse is out will be in this delay
+            thirdDXratio: 1, // ratio of X displacement 
+            thirdDYratio: 0.5, // ratio of Y displacement 
+            thirdDlogic: 1, // element displacement direction 1 or -1 , might act as a global displacement ratio 
+        };
+
         // Access to jQuery and DOM versions of element
         base.$el = $(el);
         base.el = el;
@@ -21,7 +49,7 @@
         var logging = false;
         
         base.init = function(initOptions){
-            base.options = $.extend({},$.ADNslide.defaultOptions, initOptions);
+            base.options = $.extend({},base.defaultOptions, initOptions);
             if(base.options.debug) logging = true;
             // Put your initialization code here
                      
@@ -37,6 +65,9 @@
             window.setTimeout(function(){base.play()},base.options.initTime);
         };
 
+        /**
+         * Place the handler on next, previous and bullets elements. Must be define in the json object of the init call 
+         */
         base.handler = function(){
             // Add click to next and previous button (most likely arrow)
             if(base.options.handlerNext != null){
@@ -343,33 +374,6 @@
 
         };
 
-    };
-
-    $.ADNslide.defaultOptions = {
-        // hum ... what the hell with this option ? 
-        debug: false,
-        // DefaultTimes 
-        initTime: 300, // time before the ADNslide launch, if it's too short the first animation might be lost in the loading time of the page 
-        slideTime: 5000, // duration of each slide 
-        slideAnimationTime: 400, // duration of the transition of each slide (x2 because of hiding then showing)
-        animationTime: 650, // default animation duration of sub element 
-
-        // DefaultDistances
-        animationDistanceX: 200, // X Distance the sub element will travel during is animation 
-        animationDistanceY: 100, // Y Distance the sub element will travel during is animation 
-
-        // Behaviors
-        type: 'fade', // fade, vertical, horizontal
-        stopOnHover: true, // Does we stop the slide transition if the mouse is hover the slide 
-
-        // Misc 
-        backgroundElement: null,
-
-        // 3D effect 
-        thirdDLeaveDelay: 500, // fallback to no 3d when mouse is out will be in this delay
-        thirdDXratio: 1, // ratio of X displacement 
-        thirdDYratio: 0.5, // ratio of Y displacement 
-        thirdDlogic: 1, // element displacement direction 1 or -1 , might act as a global displacement ratio 
     };
 
     $.fn.ADNslide = function(method){

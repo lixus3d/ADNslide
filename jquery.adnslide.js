@@ -14,7 +14,7 @@
             // DefaultTimes 
             initTime: 300, // time before the ADNslide launch, if it's too short the first animation might be lost in the loading time of the page 
             slideTime: 5000, // duration of each slide 
-            slideAnimationTime: 400, // duration of the transition of each slide (x2 because of hiding then showing)
+            slideAnimationTime: 1500, // duration of the transition of each slide (x2 because of hiding then showing)
             animationTime: 650, // default animation duration of sub element 
 
             // DefaultDistances
@@ -22,7 +22,7 @@
             animationDistanceY: 100, // Y Distance the sub element will travel during is animation 
 
             // Behaviors
-            type: 'fade', // fade, vertical, horizontal
+            animationType: 'fade', // fade, vertical, horizontal, rotateZ
             stopOnHover: true, // Does we stop the slide transition if the mouse is hover the slide 
 
             // Misc 
@@ -44,7 +44,7 @@
 
         // Plugin vars
         base.thirdDelements = [];
-        base.slides = base.$el.find('.jsSlide').hide();
+        base.slides = base.$el.find('.jsSlide');
         base.actualSlide = null;
         var logging = false;
         
@@ -53,12 +53,27 @@
             if(base.options.debug) logging = true;
             // Put your initialization code here
                      
-            // set default position of all moving elements 
+            // set default position of all moving elements and hide them
             base.$el.find('.jsSlidesItem').each(function(){
                 var item = $(this);
                 item.data('slide-defX',item.offset().left);
-                item.data('slide-defX',item.offset().top);
+                item.data('slide-defY',item.offset().top);
+                item.css({visibility: 'hidden'});
             });
+
+            // if we do horizontal transition, we must wrap slides in a very large container
+            if(base.options.animationType=='horizontal'){
+                var wrapper = $('<div class="jsSlideHorizontalWrapper" style="width:'+ (base.$el.width()*(base.slides.length+1)) +'px"></div>');
+                wrapper.append(base.slides);
+                base.$el.append(wrapper);
+                // trick to adapt when the browser resize and the design is responsive
+                $(window).resize(function(){
+                    base.slides.css({
+                        'float' : 'left',
+                        'width' : base.$el.width()+'px',
+                    });
+                }).trigger('resize');
+            }
 
             base.handler();
 
@@ -131,51 +146,203 @@
 
             base.getSlide(slideNumber).find('.jsSlidesItem').css({visibility: 'hidden'});
 
-            var direction = 'forward';
             if(base.actualSlide!=null){
-                // determine direction 
-                if(base.actualSlide > slideNumber) direction = 'backward';
-
-                base.slideHide(base.actualSlide,function(){ // hide actual one 
-                    base.slideShow(slideNumber,function(){ // show new one 
-                        base.timeout(slideNumber+1); // timeout for the next one 
-                    });
+                base.slideTransition(base.actualSlide,slideNumber,function(){
+                    base.timeout(slideNumber+1); // timeout for the next one 
                 });
             }else{
-                // first time
-                // Callback chain                 
-                base.slideShow(slideNumber,function(){ // show new one 
+                base.actualSlide = 0;
+                base.animate(slideNumber,'forward',function(){
                     base.timeout(slideNumber+1); // timeout for the next one 
-                });                
+                });
+                base.fadeBackground(slideNumber);
             }
 
         };
 
         /**
-         * Hiding a particular slide , that's mean animate sub element reverse and hide the slide 
-         * @param  int slideNumber      The slide you want to hide 
-         * @param  mixed callbackFunction A callback function, most likely the base.slideShow of the next slide to see 
+         * Do the transition between two slides, wrapper of the final transition type 
+         * @param  int actualSlideNumber Actual slide number
+         * @param  int slideNumber       Desired slide number 
+         * @param  mixed callbackFunction  callback function to call when animation end
          */
-        base.slideHide = function(slideNumber, callbackFunction){
-            logging?log('hiding slide '+slideNumber):null;            
-            base.animate(slideNumber,'backward',function(){
-                base.getSlide(slideNumber).fadeOut(base.options.slideAnimationTime,callbackFunction);
+        base.slideTransition = function(actualSlideNumber,slideNumber,callbackFunction){
+            logging?log('transition begin from slide '+actualSlideNumber+' to slide '+slideNumber+' with animation type : '+base.options.animationType):null;
+
+            switch(base.options.animationType){
+                case 'fade':                    
+                    base.transitionFade(actualSlideNumber,slideNumber,callbackFunction);
+                break;
+                case 'vertical':
+                    base.transitionVertical(actualSlideNumber,slideNumber,callbackFunction);
+                break;
+                case 'horizontal':
+                    base.transitionHorizontal(actualSlideNumber,slideNumber,callbackFunction);
+                break;
+                case 'rotateZ':
+                    base.transitionRotateZ(actualSlideNumber,slideNumber,callbackFunction);
+                break;
+            }
+        }
+
+        // FADING TRANSITION 
+        base.transitionFade = function(actualSlideNumber,slideNumber,callbackFunction){
+            var oldSlide = base.getSlide(actualSlideNumber);
+            var newSlide = base.getSlide(slideNumber);
+
+            base.animate(actualSlideNumber,'backward',function(){
+                newSlide.css({position:'relative',zIndex:200,opacity:0,top: (-1 * newSlide.height() * slideNumber)+'px' });
+                oldSlide.css({position:'relative',zIndex:100});
+                base.actualSlide = slideNumber;
+                newSlide.animate({opacity:1},base.options.slideAnimationTime,function(){
+                    base.animate(slideNumber,'forward',callbackFunction);
+                    oldSlide.css({position:'relative',zIndex:50});
+                });   
+                base.fadeBackground(slideNumber);
             });
-        };
+        }
+
+        // VERTICAL SCROLLING TRANSITION 
+        base.transitionVertical = function(actualSlideNumber,slideNumber,callbackFunction){
+            var oldSlide = base.getSlide(actualSlideNumber);
+            var newSlide = base.getSlide(slideNumber);
+
+            var direction = 'forward';
+            if(base.actualSlide > slideNumber) direction = 'backward';
+
+            base.animate(actualSlideNumber,'backward',function(){
+
+                if(direction=='forward'){
+                    newSlide.insertAfter(oldSlide);
+                }else{
+                    newSlide.insertBefore(oldSlide);
+                    newSlide.css({marginTop: (-1*newSlide.height())+'px'});
+                }
+                
+                base.actualSlide = slideNumber;
+
+                if(direction=='forward'){
+                    oldSlide.animate({marginTop: (-1*newSlide.height())+'px'},base.options.slideAnimationTime,'easeInOutCubic',function(){
+                        oldSlide.insertAfter(newSlide);
+                        oldSlide.css({marginTop: 0});                            
+                        base.animate(slideNumber,'forward',callbackFunction);
+                    });
+                }else{
+                    newSlide.animate({marginTop: '0'},base.options.slideAnimationTime,'easeInOutCubic',function(){
+                        base.animate(slideNumber,'forward',callbackFunction);
+                    });
+                }
+                base.fadeBackground(slideNumber);
+            });            
+        }
+
+        // HORIZONTAL SCROLLING TRANSITION 
+        base.transitionHorizontal = function(actualSlideNumber,slideNumber,callbackFunction){
+            var oldSlide = base.getSlide(actualSlideNumber);
+            var newSlide = base.getSlide(slideNumber);
+
+            var direction = 'forward';
+            if(base.actualSlide > slideNumber) direction = 'backward';
+
+            base.animate(actualSlideNumber,'backward',function(){
+
+                if(direction=='forward'){
+                    newSlide.insertAfter(oldSlide);
+                }else{
+                    newSlide.insertBefore(oldSlide);
+                    newSlide.css({marginLeft: (-1*newSlide.width())+'px'});
+                }
+                
+                base.actualSlide = slideNumber;
+
+                if(direction=='forward'){
+                    oldSlide.animate({marginLeft: (-1*newSlide.width())+'px'},base.options.slideAnimationTime,'easeInOutCubic',function(){
+                        oldSlide.insertAfter(newSlide);
+                        oldSlide.css({marginLeft: 0});                            
+                        base.animate(slideNumber,'forward',callbackFunction);
+                    });
+                }else{
+                    newSlide.animate({marginLeft: '0'},base.options.slideAnimationTime,'easeInOutCubic',function(){
+                        base.animate(slideNumber,'forward',callbackFunction);
+                    });
+                }
+                base.fadeBackground(slideNumber);
+            });               
+        }
+
+        // EXPERIMENTAL ROTATE TRANSITION (LITTLE VOMITIVE FOR NOW :))
+        base.transitionRotateZ = function(actualSlideNumber,slideNumber,callbackFunction){
+            var oldSlide = base.getSlide(actualSlideNumber);
+            var newSlide = base.getSlide(slideNumber);
+
+            base.animate(actualSlideNumber,'backward',function(){
+
+                newSlide.css({
+                    position:'relative',
+                    zIndex:200,
+                    opacity:1,
+                    top: (-1 * newSlide.height() * slideNumber)+'px',
+                    '-moz-transform' : 'rotateZ(-180deg)',
+                    '-moz-transform-origin':'bottom center',
+                    textIndent:-180 
+                });
+                oldSlide.css({
+                    position:'relative',
+                    zIndex:100,
+                     '-moz-transform' : 'rotateZ(0deg)',
+                      '-moz-transform-origin':'bottom center',
+                    textIndent:0,
+                });
+
+                base.actualSlide = slideNumber;
+
+                oldSlide.animate({
+                    textIndent : 180
+                },
+                {
+                    duration: base.options.slideAnimationTime,
+                    step: function(now, fx){
+                      $(this).css('-webkit-transform','rotateZ('+now+'deg)');
+                      $(this).css('-moz-transform','rotateZ('+now+'deg)'); 
+                      $(this).css('transform','rotateZ('+now+'deg)'); 
+                    },
+                    complete: function(){
+                        base.animate(slideNumber,'forward',callbackFunction);
+                        oldSlide.css({position:'relative',zIndex:50});
+                    }
+                });
+
+                newSlide.animate({
+                    textIndent : 0
+                },
+                {
+                    duration: base.options.slideAnimationTime,
+                    step: function(now, fx){
+                      $(this).css('-webkit-transform','rotateZ('+now+'deg)');
+                      $(this).css('-moz-transform','rotateZ('+now+'deg)'); 
+                      $(this).css('transform','rotateZ('+now+'deg)'); 
+                    }
+                });                
+
+                base.fadeBackground(slideNumber);
+            });
+        }
 
         /**
-         * Showing a particular slide, that's mean show the slide and animate sub element 
-         * @param  int slideNumber      The slide you want to show 
-         * @param  mixed callbackFunction A callback function, most likely the next base.timeout
+         * Fade elements background according to the slide backgroundcolor data 
+         * @param  int slideNumber desired slide background color 
          */
-        base.slideShow = function(slideNumber, callbackFunction){
-            logging?log('showing slide '+slideNumber):null;            
-            base.actualSlide = slideNumber;
-
-            base.getSlide(slideNumber).fadeIn(base.options.slideAnimationTime,function(){
-                base.animate(slideNumber,'forward',callbackFunction);
-            });
-        };
+        base.fadeBackground = function(slideNumber){
+            // Animate backgroundColor of elements to a particular one define in the data-slide-backgroundcolor of the slide
+            // require jquery color animation plugin (like jqueryui)
+            var bgColor = base.getSlide(slideNumber).data('slide-backgroundcolor');
+            if(bgColor!=undefined && base.options.backgroundElement ){
+                logging?log('Animate backgroundColor of "'+base.options.backgroundElement+'"" to '+bgColor):null;      
+                $(base.options.backgroundElement).animate({
+                    backgroundColor: bgColor
+                },base.options.slideAnimationTime);
+            }                                 
+        }
 
         /**
          * Activate a timeout to the next slide 
@@ -315,9 +482,9 @@
                 }
 
                 if(k==last){
-                    window.setTimeout(function(){ item.animate(animateOptions,base.options.animationTime,callbackFunction); },delay);       
+                    window.setTimeout(function(){ item.stop().animate(animateOptions,base.options.animationTime,callbackFunction); },delay);        
                 }else{
-                    window.setTimeout(function(){ item.animate(animateOptions,base.options.animationTime); },delay);        
+                    window.setTimeout(function(){ item.stop().animate(animateOptions,base.options.animationTime); },delay);        
                 }
                 
             });

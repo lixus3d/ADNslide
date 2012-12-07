@@ -33,7 +33,7 @@
             thirdDLeaveDelay: 500, // fallback to no 3d when mouse is out will be in this delay
             thirdDXratio: 1, // ratio of X displacement
             thirdDYratio: 0.5, // ratio of Y displacement
-            thirdDlogic: 1, // element displacement direction 1 or -1 , might act as a global displacement ratio
+            thirdDlogic: 1 // element displacement direction 1 or -1 , might act as a global displacement ratio
         };
 
         // Access to jQuery and DOM versions of element
@@ -76,14 +76,15 @@
                 $(window).resize(function(){
                     base.slides.css({
                         'float' : 'left',
-                        'width' : base.$el.width()+'px',
+                        'width' : base.$el.width()+'px'
                     });
                 }).trigger('resize');
             }
 
+
             base.handler();
 
-            window.setTimeout(function(){base.play()},base.options.initTime);
+            window.setTimeout(function(){base.play();},base.options.initTime);
         };
 
         /**
@@ -91,7 +92,7 @@
          */
         base.handler = function(){
             // Add click to next and previous button (most likely arrow)
-            if(base.options.handlerNext != null){
+            if(base.options.handlerNext !== null){
                 var nextElement = $(base.options.handlerNext);
                 if(nextElement.length >= 1){
                     nextElement.click(function(){
@@ -100,7 +101,7 @@
                     });
                 }
             }
-            if(base.options.handlerPrevious != null){
+            if(base.options.handlerPrevious !== null){
                 var previousElement = $(base.options.handlerPrevious);
                 if(previousElement.length >= 1){
                     previousElement.click(function(){
@@ -113,7 +114,7 @@
             base.slides.each(function(k){
                 var slide = $(this);
                 var id = slide.attr('id');
-                if(id!=''){
+                if(id!==''){
                     var bullets = $('a[href=#'+id+']');
                     base.bullets.push(bullets);
                     if(bullets.length>=1){
@@ -131,7 +132,7 @@
          * Automatic transition between slides
          */
         base.play = function(){
-            logging?log('play'):null;
+            logging ? log('play') : null;
             base.timeout(0,0);
         };
 
@@ -178,7 +179,7 @@
 
             base.getSlide(slideNumber).find('.jsSlidesItem').css({visibility: 'hidden'});
 
-            if(base.actualSlide!=null){
+            if(base.actualSlide!==null){
                 base.activeBullet(slideNumber);
                 base.slideTransition(base.actualSlide,slideNumber,function(){
                     base.unqueue();
@@ -219,7 +220,7 @@
                     base.transitionRotateZ(actualSlideNumber,slideNumber,callbackFunction);
                 break;
             }
-        }
+        };
 
         // FADING TRANSITION
         base.transitionFade = function(actualSlideNumber,slideNumber,callbackFunction){
@@ -236,7 +237,7 @@
                 });
                 base.fadeBackground(slideNumber);
             });
-        }
+        };
 
         // VERTICAL SCROLLING TRANSITION
         base.transitionVertical = function(actualSlideNumber,slideNumber,callbackFunction){
@@ -270,7 +271,7 @@
                 }
                 base.fadeBackground(slideNumber);
             });
-        }
+        };
 
         // HORIZONTAL SCROLLING TRANSITION
         base.transitionHorizontal = function(actualSlideNumber,slideNumber,callbackFunction){
@@ -304,7 +305,7 @@
                 }
                 base.fadeBackground(slideNumber);
             });
-        }
+        };
 
         // EXPERIMENTAL ROTATE TRANSITION (LITTLE VOMITIVE FOR NOW :))
         base.transitionRotateZ = function(actualSlideNumber,slideNumber,callbackFunction){
@@ -362,7 +363,7 @@
 
                 base.fadeBackground(slideNumber);
             });
-        }
+        };
 
         /**
          * Fade elements background according to the slide backgroundcolor data
@@ -378,7 +379,7 @@
                     backgroundColor: bgColor
                 },base.options.slideAnimationTime);
             }
-        }
+        };
 
         /**
          * Place the active class on the bullet(s) of the slideNumber slide
@@ -396,7 +397,7 @@
                     bullets.addClass(base.options.bulletClassActive);
                 }
             }
-        }
+        };
 
         /**
          * Activate a timeout to the next slide
@@ -416,7 +417,7 @@
          */
         base.getSlide = function(slideNumber){
             return base.slides.eq(slideNumber);
-        }
+        };
 
         /**
          * Animate the subelement of the slide
@@ -542,7 +543,7 @@
                 }
 
             });
-        }
+        };
 
         /**
          * Add the mousemove handler
@@ -571,7 +572,7 @@
          */
         base.move3d = function(x,y,fluid){
             if(!base.slideTransitionning){
-                if(fluid==undefined) fluid=false;
+                if(fluid===undefined) fluid=false;
 
                 var sWidth = $(window).width();
                 var sHeight = $(window).height();
@@ -581,16 +582,16 @@
                 $.each(base.thirdDelements, function(k,element){
                     var z = element.data('slide-3d');
 
-                    if(z!=undefined && z!=0){
+                    if(z!==undefined && z!==0){
                         var css = {
                             position: 'relative',
                             top: (displacementY*z)+"px",
                             left: (displacementX*z)+"px"
                         };
                         if(fluid){
-                            element.stop().animate(css,base.options.thirdDLeaveDelay)
+                            element.stop().animate(css,base.options.thirdDLeaveDelay);
                         }else{
-                            element.stop().animate(css,10,'linear')
+                            element.stop().animate(css,10,'linear');
                         }
                     }
                 });

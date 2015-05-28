@@ -1,9 +1,5 @@
 ADNslide
 =======
 
-Yet another slide system, with custom transition animation, fake 3D and some CSS3.
+Obsolete JS Slider. New lightweight version in progress.
 
-TODO
-=======
-
-- Add sample html
